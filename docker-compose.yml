@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    image: metricreg:local
+    environment:
+      METRICREG_DB: /data/metricreg.sqlite
+      METRICREG_SAMPLE_DIR: /app/sample_data
+      METRICREG_EVAL_DATE: "2026-11-15"
+      TZ: Asia/Shanghai
+    ports:
+      - "18206:8000"
+    volumes:
+      - metricreg-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://127.0.0.1:8000/healthz', timeout=2.0)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+
+volumes:
+  metricreg-data:

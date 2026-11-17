@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>文法</h2>
+  <div class="cmd">
+    <pre>name = expr [where field = value] [group by dim, ...] [depends: name, ...]</pre>
+    <button class="copy" type="button" data-copy>复制</button>
+  </div>
+  <pre class="ascii">{% for line in payload.grammar %}{{ line }}
+{% endfor %}运算符优先级：+ - 同级，* / 同级；每条定义独占一行</pre>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>聚合</h2>
+  <table class="tbl">
+    <thead><tr><th>名称</th><th>返回</th><th>含义</th><th>别名</th></tr></thead>
+    <tbody>
+      {% for agg in payload.aggregators %}
+      <tr><td class="mono">{{ agg.name }}</td><td>{{ agg.return_type }}</td>
+        <td>{{ agg.label }}</td><td class="mono">{{ agg.aliases | join(', ') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>字段</h2>
+  <table class="tbl">
+    <thead><tr><th>登记名</th><th>类型</th><th>单位</th><th>维度</th><th>别名</th></tr></thead>
+    <tbody>
+      {% for field in payload.fields %}
+      <tr>
+        <td class="mono">{{ field.name }}</td>
+        <td>{{ field.type }}</td>
+        <td>{{ field.unit or '—' }}</td>
+        <td>{% if field.dimension %}<span class="mark mark-ok">✓</span>{% endif %}</td>
+        <td class="mono">{{ field.aliases | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec cols cols-2">
+  <div>
+    <h2>冲突等级</h2>
+    <table class="tbl">
+      <thead><tr><th>等级</th><th>标记</th><th>含义</th></tr></thead>
+      <tbody>
+        {% for key, label, meaning in payload.conflict_levels %}
+        <tr><td class="mono">{{ key }}</td>
+          <td><span class="tag tag-{{ key | lower }}">{{ label }}</span></td>
+          <td>{{ meaning }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <h2 style="margin-top:14px">版本窗口</h2>
+    <p class="mono">{{ payload.version_window }}</p>
+  </div>
+  <div>
+    <h2>诊断顺序</h2>
+    <table class="tbl">
+      <thead><tr><th class="num">序</th><th>原因码</th></tr></thead>
+      <tbody>
+        {% for code in payload.diag_order %}
+        <tr><td class="num">{{ loop.index }}</td><td class="mono">{{ code }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>原因码</h2>
+  <div class="scroll">
+    <table class="tbl">
+      <thead><tr><th>原因码</th><th>级别</th><th>阶段</th><th>结论</th><th>下一步</th></tr></thead>
+      <tbody>
+        {% for row in reason_rows %}
+        <tr>
+          <td class="mono">{{ row.code }}</td>
+          <td>{{ row.level_label }}</td>
+          <td>{{ row.stage_label }}</td>
+          <td>{{ row.title }}</td>
+          <td>{{ row.hint }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

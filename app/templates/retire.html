@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>目标</h2>
+  <div class="cmd">
+    <pre>curl -s 127.0.0.1:18206/api/retire</pre>
+    <button class="copy" type="button" data-copy>复制</button>
+  </div>
+  <form class="form-row" action="/retire" method="get">
+    <label class="inline" for="t-input">指标</label>
+    <input id="t-input" type="text" name="targets" spellcheck="false"
+           value="{{ payload.targets | join(',') }}" style="width:auto;min-width:240px">
+    <button type="submit">计算</button>
+    <a class="mark" href="/api/retire/order.csv">迁移清单 CSV</a>
+  </form>
+  {% if payload.notice %}<p class="msg msg-bad">{{ payload.notice }}</p>{% endif %}
+  <dl class="kv" style="margin-top:8px">
+    <dt>目标</dt><dd>{{ payload.counters.targets }}</dd>
+    <dt>受影响</dt><dd>{{ payload.counters.affected }}</dd>
+    <dt>可排序</dt><dd>{{ payload.counters.orderable }}</dd>
+    <dt>阻断</dt><dd class="{% if payload.counters.blocked %}unbalanced{% else %}balanced{% endif %}">{{ payload.counters.blocked }}</dd>
+    <dt>环</dt><dd>{{ payload.counters.rings }} / 朴素 {{ payload.counters.naive_rings }}</dd>
+    <dt>孤立</dt><dd>{{ payload.counters.isolated }}</dd>
+    <dt>报表</dt><dd>{{ payload.counters.reports }}</dd>
+    <dt>权重合计</dt><dd>{{ payload.counters.weight_sum | dec2 }}</dd>
+  </dl>
+  <p class="mono mark-dim" style="margin:6px 0 0">{{ payload.rules.order }}</p>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>迁移顺序</h2>
+  {% if payload.checklist %}
+  <table class="tbl">
+    <thead><tr><th class="num">步</th><th>指标</th><th class="num">依赖方</th><th>依赖方名称</th><th class="num">报表</th><th>报表号</th></tr></thead>
+    <tbody>
+      {% for row in payload.checklist %}
+      <tr>
+        <td class="num">{{ row.step }}</td>
+        <td>{{ row.metric }}</td>
+        <td class="num">{{ row.dependents }}</td>
+        <td class="mono cut" title="{{ row.dependents_text }}">{{ row.dependents_text }}</td>
+        <td class="num">{{ row.report_count }}</td>
+        <td class="mono">{{ row.reports_text }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <pre class="ascii" style="margin-top:10px" id="retire-art"
+       data-batch="{{ batch.batch_id if batch else '' }}"
+       data-targets="{{ payload.targets | join(',') }}">读取中…</pre>
+  {% else %}
+  <p class="empty">没有可排序的指标。</p>
+  {% endif %}
+  {% if payload.stuck %}
+  <p class="msg msg-bad">未排序 {{ payload.stuck | join(' · ') }}</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>阻断项</h2>
+  {% if payload.blockers %}
+  <table class="tbl">
+    <thead><tr><th>指标</th><th>原因</th><th>级别</th><th>依据</th></tr></thead>
+    <tbody>
+      {% for row in payload.blockers %}
+      <tr>
+        <td>{{ row.metric }}</td>
+        <td><span class="tag tag-{% if row.level == 'error' %}block{% else %}review{% endif %}">{{ row.label }}</span></td>
+        <td class="mono">{{ row.code }}</td>
+        <td>{{ row.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有阻断项。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>环</h2>
+  {% if payload.rings %}
+  <table class="tbl">
+    <thead><tr><th>环键</th><th class="num">成员</th><th class="num">轮转</th><th>路径</th><th>成员名</th></tr></thead>
+    <tbody>
+      {% for ring in payload.rings %}
+      <tr>
+        <td class="mono">{{ ring.ring_id }}</td>
+        <td class="num">{{ ring.size }}</td>
+        <td class="num">{{ ring.rotations }}</td>
+        <td class="mono">{{ ring.path | join(' → ') }}</td>
+        <td class="mono">{{ ring.members | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <dl class="kv" style="margin-top:8px">
+    <dt>环内指标</dt><dd>{{ payload.ring_partition.ring_members }}</dd>
+    <dt>分项合计</dt><dd>{{ payload.ring_partition.sum_sizes }}</dd>
+    <dt>成员不重</dt><dd class="{% if payload.ring_partition.disjoint %}balanced{% else %}unbalanced{% endif %}">{{ '是' if payload.ring_partition.disjoint else '否' }}</dd>
+  </dl>
+  {% else %}
+  <p class="empty">没有依赖环。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>孤立指标</h2>
+  {% if payload.isolated %}
+  <p class="mono">{{ payload.isolated | join(' · ') }}</p>
+  {% else %}
+  <p class="empty">没有孤立指标。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>请求</h2>
+  {% if payload.requests %}
+  <table class="tbl">
+    <thead><tr><th>指标</th><th>说明</th><th>申请人</th><th>日期</th><th>状态</th></tr></thead>
+    <tbody>
+      {% for row in payload.requests %}
+      <tr>
+        <td>{{ row.metric }}</td>
+        <td class="mono cut" title="{{ row.reason }}">{{ row.reason }}</td>
+        <td class="mono">{{ row.owner }}</td>
+        <td class="mono">{{ row.requested_on }}</td>
+        <td>{% if row.status == 'ok' %}<span class="mark mark-ok">✓</span>{% elif row.status == 'duplicate' %}<span class="mark mark-warn">!</span>{% else %}<span class="mark mark-bad">x</span>{% endif %} {{ row.status_label }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有下线请求。</p>
+  {% endif %}
+  {% if payload.dangling_reports %}
+  <table class="tbl" style="margin-top:10px">
+    <thead><tr><th>报表</th><th>名称</th><th>指标</th><th class="num">权重</th></tr></thead>
+    <tbody>
+      {% for row in payload.dangling_reports %}
+      <tr><td class="mono">{{ row.report_id }}</td><td>{{ row.report_name }}</td>
+        <td>{{ row.metric }}</td><td class="num">{{ row.weight | dec2 }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>诊断</h2>
+  {% if payload.diagnostics %}
+  <div class="scroll">
+    <table class="tbl">
+      <thead><tr><th>原因码</th><th>级别</th><th>指标</th><th>结论</th></tr></thead>
+      <tbody>
+        {% for row in payload.diagnostics %}
+        <tr>
+          <td class="mono">{{ row.code }}</td>
+          <td>{% if row.level == 'error' %}<span class="mark mark-bad">x</span>{% elif row.level == 'warn' %}<span class="mark mark-warn">!</span>{% else %}<span class="mark mark-info">.</span>{% endif %} {{ level_labels.get(row.level, row.level) }}</td>
+          <td>{{ row.metric }}</td>
+          <td>{{ row.detail }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">没有诊断。</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/retire.js" defer></script>{% endblock %}

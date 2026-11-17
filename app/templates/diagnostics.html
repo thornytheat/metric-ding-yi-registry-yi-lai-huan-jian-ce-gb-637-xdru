@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>统计</h2>
+  {% if batch %}
+  <dl class="kv">
+    <dt>诊断</dt><dd data-total>{{ payload.total }}</dd>
+    <dt>隔离</dt><dd class="mark mark-bad">{{ payload.by_level.get('error', 0) }}</dd>
+    <dt>提示</dt><dd class="mark mark-warn">{{ payload.by_level.get('warn', 0) }}</dd>
+    <dt>记录</dt><dd class="mark mark-info">{{ payload.by_level.get('info', 0) }}</dd>
+  </dl>
+  <table class="tbl" style="margin-top:8px">
+    <thead><tr><th>原因码</th><th>级别</th><th class="num">条数</th><th>结论</th></tr></thead>
+    <tbody>
+      {% for row in payload.distribution %}
+      <tr>
+        <td class="mono">{{ row.code }}</td>
+        <td>{% if row.level == 'error' %}<span class="mark mark-bad">x</span>{% elif row.level == 'warn' %}<span class="mark mark-warn">!</span>{% else %}<span class="mark mark-info">.</span>{% endif %} {{ row.level_label }}</td>
+        <td class="num">{{ row.count }}</td>
+        <td>{{ row.title }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">还没有运行。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>明细</h2>
+  {% if batch %}
+  <div class="form-row" style="margin-bottom:8px">
+    <label class="inline">原因码
+      <select id="filter-code">
+        <option value="">全部</option>
+        {% for code in payload.codes %}<option value="{{ code }}">{{ code }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="inline">级别
+      <select id="filter-level">
+        <option value="">全部</option>
+        <option value="error">隔离</option>
+        <option value="warn">提示</option>
+        <option value="info">记录</option>
+      </select>
+    </label>
+    <span class="msg" id="filter-count" role="status" aria-live="polite"></span>
+    <a class="mark" href="/api/diagnostics/export.csv">导出 CSV</a>
+  </div>
+  <div class="scroll">
+    <table class="tbl" id="diag-table">
+      <thead><tr><th class="num">行</th><th>原因码</th><th>级别</th><th>指标</th><th>字段</th><th>原值</th><th>结论</th></tr></thead>
+      <tbody>
+        {% for row in payload.rows %}
+        <tr data-code="{{ row.code }}" data-level="{{ row.level }}">
+          <td class="num">{{ row.line_no if row.line_no is not none else '—' }}</td>
+          <td class="mono">{{ row.code }}</td>
+          <td>{{ row.level | level }}</td>
+          <td>{{ row.metric or '—' }}</td>
+          <td class="mono">{{ row.field or '—' }}</td>
+          <td class="cut" title="{{ row.raw_value }}">{{ row.raw_value or '—' }}</td>
+          <td>{{ row.detail }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">还没有运行。</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/diagnostics.js" defer></script>{% endblock %}

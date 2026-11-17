@@ -1,0 +1,33 @@
+/* metricreg 终端手册：石板色深底、全等宽、零圆角零阴影。只有变量。 */
+:root {
+  --bg: #0f1418;
+  --surface: #141b21;
+  --surface-2: #182028;
+  --ink: #d6dee4;
+  --ink-muted: #8b98a3;
+  --ink-faint: #5c6a75;
+  --line: #1f2933;
+  --line-strong: #33424f;
+  --accent: #4ea3c7;
+  --accent-ink: #0b1116;
+  --ok: #63a87c;
+  --warn: #c8a331;
+  --bad: #c25b5b;
+  --info: #6b8fb8;
+  --font-ui: ui-monospace, SFMono-Regular, Menlo, "Cascadia Mono", "Noto Sans Mono", monospace;
+  --font-num: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-doc: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 0px;
+  --radius-sm: 0px;
+  --pad: 14px;
+  --gap: 16px;
+  --shadow: none;
+  --cmd-bg: #182028;
+  --cmd-bar: #4ea3c7;
+  --sel: #24343f;
+  --max-w: 1120px;
+  --step-1: 20px;
+  --step-2: 15px;
+  --step-3: 13px;
+  --leading: 1.65;
+}

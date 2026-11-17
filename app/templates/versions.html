@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>版本台账</h2>
+  {% if payload.rows %}
+  <table class="tbl">
+    <thead><tr><th>指标</th><th class="num">版本</th><th>生效起</th><th>生效止</th><th>状态</th><th>作者</th></tr></thead>
+    <tbody>
+      {% for row in payload.rows %}
+      <tr>
+        <td>{{ row.metric }}</td>
+        <td class="num">v{{ row.version }}</td>
+        <td class="mono">{{ row.valid_from }}</td>
+        <td class="mono">{{ row.valid_to if row.valid_to != '9999-12-31' else '未关闭' }}</td>
+        <td>{% if row.status == 'OK' %}<span class="tag tag-ok">{{ row.status | status }}</span>{% elif row.status == 'UNKNOWN' %}<span class="tag">{{ row.status | status }}</span>{% else %}<span class="tag tag-block">{{ row.status | status }}</span>{% endif %}</td>
+        <td class="mono">{{ row.author }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">还没有版本台账。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>提交版本</h2>
+  <form class="form" id="version-form" action="/api/versions/submit" method="post">
+    <div class="cols cols-2">
+      <div>
+        <label for="v-metric">指标</label>
+        <select id="v-metric" name="metric">
+          {% for name in payload.metrics %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="v-version">版本号</label>
+        <input type="number" id="v-version" name="version" min="1" step="1" value="9">
+      </div>
+      <div>
+        <label for="v-from">生效起</label>
+        <input type="date" id="v-from" name="valid_from" value="2026-12-01">
+      </div>
+      <div>
+        <label for="v-to">生效止</label>
+        <input type="date" id="v-to" name="valid_to" value="2027-03-01">
+      </div>
+    </div>
+    <div class="form-row">
+      <button type="submit">提交</button>
+      <span class="msg" id="version-msg" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>批次</h2>
+  {% if history %}
+  <table class="tbl">
+    <thead><tr><th>批次</th><th>run</th><th>输入</th><th class="num">行</th><th class="num">注册</th><th class="num">隔离</th><th>状态</th><th>时间</th></tr></thead>
+    <tbody>
+      {% for row in history %}
+      <tr>
+        <td class="mono">{{ row.batch_id }}</td>
+        <td class="mono">{{ row.run_id }}</td>
+        <td class="mono">{{ row.input_digest }}</td>
+        <td class="num">{{ row.lines }}</td>
+        <td class="num">{{ row.registered }}</td>
+        <td class="num">{{ row.isolated }}</td>
+        <td>{{ row.status | status }}</td>
+        <td class="mono">{{ row.created_at | ts }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">还没有批次。</p>
+  {% endif %}
+</section>
+{% endblock %}

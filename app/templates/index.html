@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>运行</h2>
+  <div class="cmd">
+    <pre>curl -s -X POST 127.0.0.1:18206/api/import -H 'content-type: application/json' -d '{}'</pre>
+    <button class="copy" type="button" data-copy>复制</button>
+  </div>
+  <form class="form" id="import-form" action="/api/import" method="post">
+    <label for="dsl">指标定义</label>
+    <textarea id="dsl" name="text" rows="6" spellcheck="false"
+              placeholder="销售额 = SUM(order_amt) - SUM(refund_amt) group by store_id"></textarea>
+    <div class="form-row">
+      <label class="inline"><input type="radio" name="sample" value="metrics_dirty.dsl" checked> 脏样例</label>
+      <label class="inline"><input type="radio" name="sample" value="metrics_clean.dsl"> 干净样例</label>
+      <button type="submit">解析</button>
+      <span class="msg" id="import-msg" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>阶段</h2>
+  {% if stages %}
+  <table class="tbl">
+    <thead><tr><th>阶段</th><th class="num">入</th><th class="num">出</th><th class="num">隔离</th><th>备注</th></tr></thead>
+    <tbody>
+      {% for s in stages %}
+      <tr>
+        <td>{{ s.label }}</td>
+        <td class="num">{{ s.in_count | count }}</td>
+        <td class="num">{{ s.out_count | count }}</td>
+        <td class="num">{{ s.isolated | count }}</td>
+        <td class="mono">{{ s.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">还没有运行。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>行账</h2>
+  {% if batch %}
+  <dl class="kv">
+    <dt>输入行</dt><dd>{{ summary.total }}</dd>
+    <dt>注册</dt><dd>{{ totals.metrics_registered | default('0') }}</dd>
+    <dt>隔离</dt><dd>{{ totals.lines_isolated | default('0') }}</dd>
+    <dt>空行</dt><dd>{{ summary.blank }}</dd>
+    <dt>注释</dt><dd>{{ summary.comment }}</dd>
+  </dl>
+  <div class="scroll" style="margin-top:8px">
+    <table class="tbl">
+      <thead><tr><th class="num">行</th><th>状态</th><th>原因码</th><th>原文</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr data-state="{{ row.state }}">
+          <td class="num">{{ row.line_no }}</td>
+          <td>{% if row.state == 'isolated' %}<span class="mark mark-bad">x</span>{% elif row.state == 'registered' %}<span class="mark mark-ok">✓</span>{% else %}<span class="mark mark-dim">·</span>{% endif %} {{ row.state | status }}</td>
+          <td class="mono">{{ row.code or '—' }}</td>
+          <td class="cut" title="{{ row.raw }}">{{ row.raw }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">还没有运行。</p>
+  {% endif %}
+</section>
+{% endblock %}

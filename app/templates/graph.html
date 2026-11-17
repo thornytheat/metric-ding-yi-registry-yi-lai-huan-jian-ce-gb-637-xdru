@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>依赖图</h2>
+  <div class="cmd">
+    <pre>curl -s 127.0.0.1:18206/api/graph</pre>
+    <button class="copy" type="button" data-copy>复制</button>
+  </div>
+  <dl class="kv">
+    <dt>节点</dt><dd>{{ payload.counts.nodes }}</dd>
+    <dt>边</dt><dd>{{ payload.counts.edges }}</dd>
+    <dt>分量</dt><dd>{{ payload.counts.components }}</dd>
+    <dt>环</dt><dd class="{% if payload.counts.cycles %}unbalanced{% else %}balanced{% endif %}">{{ payload.counts.cycles }}</dd>
+  </dl>
+  <pre class="ascii" id="graph-art" data-batch="{{ batch.batch_id if batch else '' }}">读取中…</pre>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>环</h2>
+  {% if payload.cycles %}
+  <table class="tbl">
+    <thead><tr><th class="num">分量</th><th class="num">大小</th><th>环路</th><th>成员</th></tr></thead>
+    <tbody>
+      {% for comp in payload.cycles %}
+      <tr>
+        <td class="num">{{ comp.comp_id }}</td>
+        <td class="num">{{ comp.size }}</td>
+        <td class="mono">{{ comp.path | join(' → ') }}</td>
+        <td class="mono">{{ comp.members | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有依赖环。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>同名冲突</h2>
+  {% if payload.conflicts %}
+  <table class="tbl">
+    <thead><tr><th>指标</th><th>等级</th><th class="num">保留</th><th class="num">冲突</th><th>差异</th></tr></thead>
+    <tbody>
+      {% for row in payload.conflicts %}
+      <tr>
+        <td>{{ row.metric }}</td>
+        <td><span class="tag tag-{{ row.level | lower }}">{{ row.level_label }}</span></td>
+        <td class="num">{{ row.kept_line }}</td>
+        <td class="num">{{ row.other_line }}</td>
+        <td class="mono">{{ row.diff | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有同名冲突。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>边</h2>
+  <table class="tbl">
+    <thead><tr><th>类型</th><th class="num">条数</th></tr></thead>
+    <tbody>
+      {% for kind, label in payload.edge_labels.items() %}
+      <tr><td>{{ label }}</td><td class="num">{{ payload.by_edge.get(kind, 0) }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="scroll" style="margin-top:8px">
+    <table class="tbl">
+      <thead><tr><th>类型</th><th>起点</th><th>终点</th></tr></thead>
+      <tbody>
+        {% for edge in payload.edges %}
+        <tr><td class="mono">{{ edge.kind }}</td><td class="mono">{{ edge.src }}</td><td class="mono">{{ edge.dst }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/graph.js" defer></script>{% endblock %}

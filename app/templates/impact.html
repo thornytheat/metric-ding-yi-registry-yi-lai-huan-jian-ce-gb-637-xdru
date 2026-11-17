@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="sec">
+  <h2>目标</h2>
+  <form class="form-row" action="/impact" method="get">
+    <label class="inline" for="m-select">指标</label>
+    <select id="m-select" name="metric" style="width:auto;min-width:180px">
+      {% for name in payload.names %}
+      <option value="{{ name }}"{% if name == payload.metric %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">计算</button>
+    <a class="mark" href="/api/export/metrics.csv">指标 CSV</a>
+    <a class="mark" href="/api/export/edges.csv">边 CSV</a>
+    <a class="mark" href="/api/export/conflicts.csv">冲突 CSV</a>
+    <a class="mark" href="/api/export/manifest.json">清单 JSON</a>
+  </form>
+  {% if payload.known %}
+  <dl class="kv" style="margin-top:10px">
+    <dt>目标</dt><dd>{{ payload.metric }}</dd>
+    <dt>下游</dt><dd>{{ payload.downstream_count }}</dd>
+    <dt>报表</dt><dd>{{ payload.report_count }}</dd>
+    <dt>权重合计</dt><dd>{{ payload.weight_sum | dec2 }}</dd>
+    <dt>影响分</dt><dd class="big">{{ payload.score | dec2 }}</dd>
+  </dl>
+  <p class="mono" style="margin:6px 0 0">{{ payload.downstream | join(' · ') or '无下游指标' }}</p>
+  {% else %}
+  <p class="empty">选择指标后计算。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>受影响报表</h2>
+  {% if payload.affected_reports %}
+  <table class="tbl">
+    <thead><tr><th>报表</th><th>名称</th><th>指标</th><th class="num">权重</th></tr></thead>
+    <tbody>
+      {% for row in payload.affected_reports %}
+      <tr><td class="mono">{{ row.report_id }}</td><td>{{ row.report_name }}</td>
+        <td>{{ row.metric }}</td><td class="num">{{ row.weight | dec2 }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有报表引用。</p>
+  {% endif %}
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>影响分排序</h2>
+  <table class="tbl">
+    <thead><tr><th>指标</th><th class="num">行</th><th class="num">下游</th><th class="num">报表</th><th class="num">权重</th><th class="num">影响分</th></tr></thead>
+    <tbody>
+      {% for row in payload.ranking %}
+      <tr>
+        <td>{{ row.metric }}</td>
+        <td class="num">{{ row.line_no }}</td>
+        <td class="num">{{ row.downstream_count }}</td>
+        <td class="num">{{ row.report_count }}</td>
+        <td class="num">{{ row.weight_sum | dec2 }}</td>
+        <td class="num">{{ row.score | dec2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<div class="sec-rule" aria-hidden="true"></div>
+
+<section class="sec">
+  <h2>四账</h2>
+  {% if accounts.accounts %}
+  <table class="tbl">
+    <thead><tr><th>账</th><th>分项</th><th class="num">合计</th><th>平</th></tr></thead>
+    <tbody>
+      {% for row in accounts.accounts %}
+      <tr>
+        <td>{{ row.account }}</td>
+        <td class="mono">{% for term in row.terms %}{{ term.label }} {{ term.value }}{% if not loop.last %} + {% endif %}{% endfor %}</td>
+        <td class="num">{{ row.total }}</td>
+        <td>{% if row.balanced %}<span class="mark mark-ok">✓</span>{% else %}<span class="mark mark-bad">x</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <dl class="kv" style="margin-top:8px">
+    <dt>节点</dt><dd>{{ accounts.details.nodes_total }}</dd>
+    <dt>边</dt><dd>{{ accounts.details.edges_total }}</dd>
+    <dt>报表命中</dt><dd>{{ accounts.details.reports_resolved }} / {{ accounts.details.reports_total }}</dd>
+    <dt>环分量</dt><dd>{{ accounts.details.cycle_components }}</dd>
+    <dt>四账</dt><dd class="{% if accounts.all_balanced %}balanced{% else %}unbalanced{% endif %}">{% if accounts.all_balanced %}平{% else %}不平{% endif %}</dd>
+  </dl>
+  {% else %}
+  <p class="empty">还没有账目。</p>
+  {% endif %}
+</section>
+{% endblock %}

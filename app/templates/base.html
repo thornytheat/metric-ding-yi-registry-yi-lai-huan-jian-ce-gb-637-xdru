@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page_title }} · metricreg</title>
+<link rel="stylesheet" href="/static/theme.css">
+<link rel="stylesheet" href="/static/layout.css">
+<link rel="stylesheet" href="/static/components.css">
+</head>
+<body>
+<header class="bar">
+  <div class="bar-row">
+    <span class="prompt">$</span>
+    <span class="brand">metricreg</span>
+    <span class="rev">{{ rule_version }}</span>
+    <span class="spacer"></span>
+    <span class="kbd-hint"><kbd>1</kbd>…<kbd>7</kbd> 切页</span>
+  </div>
+  <nav class="tabs" aria-label="分区">
+    {% for href, label, key in nav %}
+    <a class="tab{% if page == key %} tab-on{% endif %}" href="{{ href }}"
+       data-nav="{{ key }}"{% if page == key %} aria-current="page"{% endif %}><span class="idx">{{ loop.index }}</span>{{ label }}</a>
+    {% endfor %}
+  </nav>
+</header>
+
+<main class="doc">
+  <div class="doc-head">
+    <h1>{{ page_title }}</h1>
+    <div class="doc-meta">
+      {% if batch %}
+      <span>batch <b data-batch-id>{{ batch.batch_id }}</b></span>
+      <span>run <b>{{ batch.run_id }}</b></span>
+      <span>key <b>{{ batch.batch_key[:12] }}</b></span>
+      <span>{{ batch.created_at | ts }}</span>
+      {% else %}
+      <span class="mark mark-dim">无批次</span>
+      {% endif %}
+      <span class="mark mark-dim">{{ timezone_label }}</span>
+    </div>
+  </div>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="foot">
+  <span>{{ rule_version }}</span>
+  <span>eval {{ eval_date }}</span>
+  <span>生成 {{ print_ts }}</span>
+</footer>
+<script src="/static/terminal.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
